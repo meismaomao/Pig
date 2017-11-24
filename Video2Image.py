@@ -1,31 +1,43 @@
 import os
-import shutil
+import cv2
 
-TRAIN_ROOT = 'data/train_folder'
-VALIDATION_ROOT = 'data/validation_folder/'
-videos_folder = 'data/videos_folder/'
-total_frames = 592
-split_ratio = 4
-split_point = 500
-recreate = False
+TRAIN_ROOT = '/home/lenovo/yql/pig_data/train_folder'
+VALIDATION_ROOT = '/home/lenovo/yql/pig_data/validation_folder/'
+videos_folder = '/home/lenovo/yql/pig_data/videos_folder/'
 
-if recreate:
-    shutil.rmtree(TRAIN_ROOT)
-    shutil.rmtree(VALIDATION_ROOT)
-    os.makedirs('data/train_folder')
-    os.makedirs('data/validation_folder')
 
-def _img_path(pig_class, img_id, folder):
-    if img_id == None:
-        return folder + str(pig_class)
+def video2image(video):
+    vc = cv2.VideoCapture(video)
+    c = 1
+    train_count = 1
+    valid_count = 1
+    if vc.isOpened():
+        rval, frame = vc.read()
     else:
-        return folder + str(pig_class) + '/' + ('image%d-%04d' %
-                                                (pig_class, img_id)) + '.jpg'
+        rval = False
+        print('The viode is not found')
+    video_path, _ = os.path.splitext(video)
+    video_name = video_path.split('/')[-1]
+    timeF = 10
+    while rval:
+        rval, frame = vc.read()
+        if c % 100 == 0: #save validation data
+            print(os.path.join(VALIDATION_ROOT, 'image%d-%08d.jpg' % (int(video_name), valid_count)))
+            cv2.imwrite(os.path.join(VALIDATION_ROOT, 'image%d-%08d.jpg' % (int(video_name), valid_count)), frame)
+            valid_count += 1
+        else: # save train data
+            print(os.path.join(TRAIN_ROOT, 'image%d-%08d.jpg' % (int(video_name), train_count)))
+            cv2.imwrite(os.path.join(TRAIN_ROOT, 'image%d-%08d.jpg' % (int(video_name), train_count)), frame)
+            train_count += 1
+        c = c + 1
+        cv2.waitKey(1)
+    vc.release()
 
-for pig_class in range(1,31):
-    for img_id in range(1, total_frames):
-        if img_id >= split_point:
-            try:
-                shutil.copy(_img_path(pig_class, img_id, videos_folder), _img_path(pig_class, img_id, VALIDATION_ROOT))
-            except:
-                os.makedirs(_img_path(pig_class, None, VALIDATION_ROOT))
+if __name__ == '__main__':
+
+    videos = os.listdir('/home/lenovo/yql/pig_data/videos_folder')
+    for file_name in videos:
+        video_path = os.path.join('/home/lenovo/yql/pig_data/videos_folder', file_name)
+        print(video_path)
+        video2image(video_path)
+        print('video %s is capture ok' % (file_name))
