@@ -22,12 +22,12 @@ def video2image(video):
     while rval:
         rval, frame = vc.read()
         if c % 100 == 0: #save validation data
-            print(os.path.join(VALIDATION_ROOT, 'image%d-%08d.jpg' % (int(video_name), valid_count)))
-            cv2.imwrite(os.path.join(VALIDATION_ROOT, 'image%d-%08d.jpg' % (int(video_name), valid_count)), frame)
+            print(os.path.join(VALIDATION_ROOT, 'image%02d-%04d.jpg' % (int(video_name), valid_count)))
+            cv2.imwrite(os.path.join(VALIDATION_ROOT, 'image%02d-%08d.jpg' % (int(video_name), valid_count)), frame)
             valid_count += 1
-        else: # save train data
-            print(os.path.join(TRAIN_ROOT, 'image%d-%08d.jpg' % (int(video_name), train_count)))
-            cv2.imwrite(os.path.join(TRAIN_ROOT, 'image%d-%08d.jpg' % (int(video_name), train_count)), frame)
+        elif c % 5 == 0: # save train data
+            print(os.path.join(TRAIN_ROOT, 'image%02d-%04d.jpg' % (int(video_name), train_count)))
+            cv2.imwrite(os.path.join(TRAIN_ROOT, 'image%02d-%08d.jpg' % (int(video_name), train_count)), frame)
             train_count += 1
         c = c + 1
         cv2.waitKey(1)

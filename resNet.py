@@ -11,6 +11,12 @@ def softmax_layer(inpt, shape):
     fc_h = tf.nn.softmax(tf.matmul(inpt, fc_w) + fc_b)
     return fc_h
 
+def relu_layer(inpt, shape):
+    fc_w = weight_variable(shape)
+    fc_b = tf.Variable(tf.zeros([shape[1]]))
+    fc_h = tf.nn.relu(tf.matmul(inpt, fc_w) + fc_b)
+    return fc_h
+
 def conv_layer(inpt, filter_shape, stride):
     out_channles = filter_shape[3]
 
@@ -19,7 +25,7 @@ def conv_layer(inpt, filter_shape, stride):
     conv = tf.nn.conv2d(inpt, filter=filter_, strides=[1, stride, stride, 1], padding='SAME')
     conv = tf.nn.bias_add(conv, bias_)
     mean, var = tf.nn.moments(conv, axis=[0, 1, 2])
-    beta = tf.Variable(tf.zeros([out_channels]), name='beta')
+    beta = tf.Variable(tf.zeros([out_channles]), name='beta')
     gamma = weight_variable([out_channles], name='gamma')
 
     batch_norm = tf.nn.batch_norm_with_global_normalization(

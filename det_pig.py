@@ -18,6 +18,8 @@ if tf.__version__ != '1.4.0':
 	raise ImportError('Please upgrade your tensorflow installation to v1.4.0!')
 test_mode = False
 BATCH_SIZE = 4
+class_keep = [300, 150]
+expand_ratio = 1.05
 
 sys.path.append("..")
 sys.path.append("../..")
@@ -70,6 +72,12 @@ def load_image_into_numpy_array(image):
 	return np.array(image.getdata()).reshape(
 		(im_height, im_width, 3)).astype(np.uint8)
 
+def select_class(classes, class_keep):
+	for i in range(0, len(classes)):
+		if classes[i] in class_keep:
+			return i
+	print(classes)
+	return 0
 
 # For the sake of simplicity we will use only 2 images:
 # image1.jpg
@@ -129,8 +137,8 @@ with detection_graph.as_default():
 				ymax = boxes[0, 0, 2]
 				xmax = boxes[0, 0, 3]
 				(xminn, xmaxx, yminn, ymaxx) = (
-				np.floor(xmin * im_width), np.ceil(xmax * im_width), np.floor(ymin * im_height),
-				np.ceil(ymax * im_height))
+					np.floor(xmin * im_width), np.ceil(xmax * im_width), np.floor(ymin * im_height),
+					np.ceil(ymax * im_height))
 				image_np2 = load_image_into_numpy_array(image)
 				cropped = tf.image.crop_to_bounding_box(image_np2, int(yminn), int(xminn),
 				                                        int(ymaxx - yminn), int(xmaxx - xminn))
@@ -142,7 +150,7 @@ with detection_graph.as_default():
 		else:
 			TEST_IMAGE = os.listdir('/home/lenovo/yql/pig_data/train_folder/')
 			TEST_IMAGE_PATHS = [item for item in TEST_IMAGE]
-			image = cv2.imread(TEST_IMAGE_PATHS[0])
+			image = cv2.imread(os.path.join('/home/lenovo/yql/pig_data/train_folder/', TEST_IMAGE_PATHS[0]))
 			im_width = image.shape[1]
 			im_height = image.shape[0]
 
@@ -164,18 +172,22 @@ with detection_graph.as_default():
 				#              time3 = timeit.default_timer()
 				#              print(time3 - time2)
 				for k in range(0, BATCH_SIZE):
-					ymin = boxes[k, 0, 0]
-					xmin = boxes[k, 0, 1]
-					ymax = boxes[k, 0, 2]
-					xmax = boxes[k, 0, 3]
-					(xminn, xmaxx, yminn, ymaxx) = (
-					np.floor(xmin * im_width), np.ceil(xmax * im_width), np.floor(ymin * im_height),
-					np.ceil(ymax * im_height))
+					if len(class_keep) == 0:
+						box_id = 0
+					else:
+						box_id = select_class(classes[k, :], class_keep)
 
+					ymin = boxes[k, box_id, 0]
+					xmin = boxes[k, box_id, 1]
+					ymax = boxes[k, box_id, 2]
+					xmax = boxes[k, box_id, 3]
+					(xminn, xmaxx, yminn, ymaxx) = (
+						np.floor(xmin * im_width), np.ceil(xmax * im_width), np.floor(ymin * im_height),
+						np.ceil(ymax * im_height))
+					w_expend = (xmaxx - xminn) * (expand_ratio - 1)
+					h_expend = (ymaxx - yminn) * (expand_ratio - 1)
 					fname = os.path.join(TARGET_FOLDER, TEST_IMAGE[j + k])
 					#                  im = Image.fromarray(images[k][0, int(yminn):int(ymaxx) , int(xminn):int(xmaxx), :])
 					#                  im.save(fname)
-					cv2.imwrite(fname, images[k][0, int(yminn):int(ymaxx), int(xminn):int(xmaxx), :])
-
-
-
+					cv2.imwrite(fname, images[k][0, max(0, int(yminn - h_expend)): min(im_height, int(ymaxx + h_expend)),
+					                   max(0, int(xminn - w_expend)): min(im_width, int(xmaxx + w_expend)), :])
